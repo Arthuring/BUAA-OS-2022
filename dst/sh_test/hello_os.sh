@@ -1,9 +1,6 @@
 #!/bin/bash
-echo `sed '8q;d' $1` > $2
-echo `sed '32q;d' $1` >> $2
-echo `sed '128q;d' $1` >> $2
-echo `sed '512q;d' $1` >> $2
-echo `sed '1024q;d' $1` >> $2
-
-
-
+echo `sed -n 8p $1` > $2
+echo `sed -n 32p  $1` >> $2
+echo `sed -n 128p $1` >> $2
+echo `sed -n 512p $1` >> $2
+echo `sed -n 1024p $1` >> $2
