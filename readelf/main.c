@@ -6,7 +6,7 @@ extern int readelf(u_char* binary, int size);
         overview: input a elf format file name from control line, call the readelf function
                   to parse it.
         params:
-                argc: the number of parameters
+               argc: the number of parameters
                 argv: array of parameters, argv[1] shuold be the file name.
 
 */
