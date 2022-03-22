@@ -1,0 +1,4 @@
+4:	printf("os_hello");
+5:	long OS_HELLO;
+6:	OS_HELLO = 5;
+7:	int os_HELLo;
