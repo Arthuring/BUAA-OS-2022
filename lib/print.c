@@ -128,7 +128,26 @@ lp_Print(void (*output)(void *, char *, int),
 
 	negFlag = 0;
 	switch (*fmt) {
-	 case 'b':
+	/*case '?':
+	  struct xx*ptr = va_arg(ap, struct xx*);
+	  // char{
+	  length = PrintChar(buf, '{',1,0);
+	  OUTPUT(arg,bug,length);
+	  num = ptr -> a ;
+	  negFlag = 0;
+	  if(num < 0){
+		num  = -num;
+		negFlag = 0;
+	  }
+	  length = PrintNum(buf,num,10,negFlag,width ladjust,padc,0);
+	  OUTPUT(arg, buf, length);
+	  length = PrintChar(buf, ',',1,0);
+	  OUTPUT(arg,buf,length);
+	  --------------------------------
+	 */
+	
+
+	case 'b':
 	    if (longFlag) { 
 		num = va_arg(ap, long int); 
 	    } else { 
