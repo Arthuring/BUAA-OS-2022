@@ -159,7 +159,7 @@ extern volatile Pde *vpd[];
 		u_long ppn = PPN(pa);					\
 		if (ppn >= npage)					\
 			panic("KADDR called with invalid pa %08lx", (u_long)pa);\
-		(pa) + ULIM;					\
+		((u_long)(pa)) + ULIM;					\
 	})
 
 #define assert(x)	\
