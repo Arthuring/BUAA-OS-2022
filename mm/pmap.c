@@ -212,8 +212,12 @@ void page_init(void)
 
 	/* Step 4: Mark the other memory as free. */
 	for(now = &pages[PPN(PADDR(freemem))];page2ppn(now) < npage; now++){
-		now->pp_ref = 0;
-		LIST_INSERT_HEAD(&page_free_list, now, pp_link);
+		if(page2ppn(now) != PPN(TIMESTACK) ){
+			now->pp_ref = 0;
+			LIST_INSERT_HEAD(&page_free_list, now, pp_link);
+		}else{
+			now->pp_ref = 1;
+		}
 	}	
 }
 
@@ -246,7 +250,7 @@ int page_alloc(struct Page **pp)
 
 	/* Step 2: Initialize this page.
 	 * Hint: use `bzero`. */
-	bzero(page2kva(tmp),BY2PG);
+	bzero((void *)page2kva(tmp),BY2PG);
 	*pp = tmp;
 	return 0;
 
