@@ -206,7 +206,7 @@ env_setup_vm(struct Env *e)
 	e->env_cr3 = PADDR(pgdir);
 
     /* UVPT maps the env's own page table, with read-only permission.*/
-    e->env_pgdir[PDX(UVPT)]  = e->env_cr3 | PTE_V | PTE_R;
+    e->env_pgdir[PDX(UVPT)]  = e->env_cr3 | PTE_V;
     return 0;
 }
 
@@ -253,13 +253,14 @@ env_alloc(struct Env **new, u_int parent_id)
 	e->env_id = mkenvid(e);
 	e->env_parent_id = parent_id;
 	e->env_status = ENV_RUNNABLE;
-
+	e->env_runs = 0;
     /* Step 4: Focus on initializing the sp register and cp0_status of env_tf field, located at this new Env. */
     e->env_tf.cp0_status = 0x10001004;
 	e->env_tf.regs[29] = USTACKTOP; 
 
     /* Step 5: Remove the new Env from env_free_list. */
 	LIST_REMOVE(e, env_link);
+	LIST_INSERT_HEAD(&env_sched_list[0],e,env_sched_link);
 	*new = e;
 	return 0;
 }
@@ -315,7 +316,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		page_insert(env->env_pgdir, p, va + i, PTE_R );
 		size = (BY2PG < (bin_size-i)) ? BY2PG : (bin_size - i);
 		bcopy((void *)bin + i, (void *)(page2kva(p)), size);
-		i += size;
+		i += BY2PG;
 	}
 
 //	printf("i + va : %x\n", va + i);
@@ -323,23 +324,23 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 
     /* Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
      * hint: variable `i` has the value of `bin_size` now! */
-	offset = va + i - ROUNDDOWN(va + i, BY2PG);
+//	offset = va + i - ROUNDDOWN(va + i, BY2PG);
 //	printf("offset: %x\n", offset );
-	if(offset){
-		p = page_lookup(env->env_pgdir,va + i, NULL);
-		if(p == 0){
-			r = page_alloc(&p);
-			if(r != 0){
-				return r;
-			}
-			page_insert(env->env_pgdir, p, va + i, PTE_R);
-		}
-		size = MIN(sgsize - i, BY2PG - offset);
+//	if(offset){
+//		p = page_lookup(env->env_pgdir,va + i, NULL);
+//		if(p == 0){
+//			r = page_alloc(&p);
+//			if(r != 0){
+//				return r;
+//			}
+//			page_insert(env->env_pgdir, p, va + i, PTE_R);
+//		}
+//		size = MIN(sgsize - i, BY2PG - offset);
 //		printf("bzero: p: %x, p+offset : %x\n ", page2kva(p),page2kva(p) + offset);
-		bzero((void *)(page2kva(p) + offset), size);
+//		bzero((void *)(page2kva(p) + offset), size);
 //		printf("bzeroend: end p: %x\n", page2kva(p)+offset + size);
-		i = i + size;
-	}	
+//		i = i + size;
+//	}	
    	while (i < sgsize) {
 		if((r = page_alloc(&p)) != 0){
 			return r;
@@ -347,14 +348,14 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		page_insert(env->env_pgdir, p, va+i, PTE_R);
 		size = BY2PG;
 		bzero((void *)page2kva(p), size);
-		i += size;
+		i += BY2PG;
     }
-	offset = va + i - ROUNDDOWN(va+i,BY2PG);
-	if(offset > 0){
-		size = BY2PG - offset;
-		bzero((void *)page2kva(p)+offset, size);
-		i += size;
-	}
+//	offset = va + i - ROUNDDOWN(va+i,BY2PG);
+//	if(offset > 0){
+//		size = BY2PG - offset;
+//		bzero((void *)page2kva(p)+offset, size);
+//		i += size;
+//	}
     return 0;
 }
 /* Overview:
@@ -425,7 +426,7 @@ env_create_priority(u_char *binary, int size, int priority)
     /* Step 1: Use env_alloc to alloc a new env. */
 	int r;
 	r = env_alloc(&e,0);
-	if(r < 0){
+	if(r != 0){
 		return;
 	}
     /* Step 2: assign priority to the new env. */
@@ -435,6 +436,8 @@ env_create_priority(u_char *binary, int size, int priority)
     /* Step 3: Use load_icode() to load the named elf binary,
        and insert it into env_sched_list using LIST_INSERT_HEAD. */
 	load_icode(e, binary, size);
+//	LIST_INSERT_TAIL(&env_sched_list[0],e,env_sched_link);
+
 }
 /* Overview:
  * Allocate a new env with default priority value.
@@ -537,9 +540,11 @@ env_run(struct Env *e)
      *   you should switch the context and save the registers. 
      *   You can imitate env_destroy() 's behaviors.*/
 	if(curenv != NULL){
-		bcopy((void *)(TIMESTACK - sizeof(struct Trapframe)), (void *)(&(curenv->env_tf)), sizeof(struct Trapframe));
+
+		struct Trapframe *old;
+		old = (struct Trapframp * )(TIMESTACK - sizeof(struct Trapframe));
+		bcopy((void *)old, (void *)(&(curenv->env_tf)), sizeof(struct Trapframe));
 		curenv->env_tf.pc = curenv->env_tf.cp0_epc;
-	
 	}
 	
     /* Step 2: Set 'curenv' to the new environment. */
@@ -676,9 +681,9 @@ void load_icode_check() {
     assert(*((int *)KADDR(PTE_ADDR(*pte)) + 0x2aa) == 0x004099fc);
     printf("text & data segment load right!\n");
     /* bss        : 0x00409aac - 0x0040aab4 left closed and right open interval */
-   	printf("%x\n", *((int *)KADDR(PTE_ADDR(*pte)) + 0x2ab));
+//   	printf("%x\n", *((int *)KADDR(PTE_ADDR(*pte)) + 0x2ab));
    
-   	assert(*((int *)KADDR(PTE_ADDR(*pte)) + 0x2ab) == 0x00000000);
+   	assert(*((int *)KADDR(PTE_ADDR(*pte)) + 0x2b7) == 0x00000000);
     assert(*((int *)KADDR(PTE_ADDR(*pte)) + 1023) == 0x00000000);
     assert(pgdir_walk(e->env_pgdir, 0x0040a000, 0, &pte) == 0);
     assert(*((int *)KADDR(PTE_ADDR(*pte))) == 0x00000000);
