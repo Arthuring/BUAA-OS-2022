@@ -324,23 +324,23 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 
     /* Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
      * hint: variable `i` has the value of `bin_size` now! */
-//	offset = va + i - ROUNDDOWN(va + i, BY2PG);
+	offset = va + i - ROUNDDOWN(va + i, BY2PG);
 //	printf("offset: %x\n", offset );
-//	if(offset){
-//		p = page_lookup(env->env_pgdir,va + i, NULL);
-//		if(p == 0){
-//			r = page_alloc(&p);
-//			if(r != 0){
-//				return r;
-//			}
-//			page_insert(env->env_pgdir, p, va + i, PTE_R);
-//		}
-//		size = MIN(sgsize - i, BY2PG - offset);
+	if(offset){
+		p = page_lookup(env->env_pgdir,va+i,NULL);
+		if(p == 0){
+			r = page_alloc(&p);
+			if(r != 0){
+				return r;
+			}
+			page_insert(env->env_pgdir, p, va+i,PTE_R);
+		}
+		size = MIN(sgsize - i, BY2PG - offset);
 //		printf("bzero: p: %x, p+offset : %x\n ", page2kva(p),page2kva(p) + offset);
-//		bzero((void *)(page2kva(p) + offset), size);
+		bzero((void *)(page2kva(p) + offset), size);
 //		printf("bzeroend: end p: %x\n", page2kva(p)+offset + size);
-//		i = i + size;
-//	}	
+		i = i + size;
+	}	
    	while (i < sgsize) {
 		if((r = page_alloc(&p)) != 0){
 			return r;
