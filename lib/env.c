@@ -247,8 +247,8 @@ env_alloc(struct Env **new, u_int parent_id)
 	
     /* Step 2: Call a certain function (has been completed just now) to init kernel memory layout for this new Env.
      *The function mainly maps the kernel address to this new Env address. */
-	env_setup_vm(e);
-
+	r =	env_setup_vm(e);
+	if(r != 0) return r;
     /* Step 3: Initialize every field of new Env with appropriate values.*/
 	e->env_id = mkenvid(e);
 	e->env_parent_id = parent_id;
@@ -260,7 +260,7 @@ env_alloc(struct Env **new, u_int parent_id)
 
     /* Step 5: Remove the new Env from env_free_list. */
 	LIST_REMOVE(e, env_link);
-	LIST_INSERT_HEAD(&env_sched_list[0],e,env_sched_link);
+//	LIST_INSERT_HEAD(&env_sched_list[0],e,env_sched_link);
 	*new = e;
 	return 0;
 }
@@ -423,7 +423,7 @@ env_create_priority(u_char *binary, int size, int priority)
     /* Step 3: Use load_icode() to load the named elf binary,
        and insert it into env_sched_list using LIST_INSERT_HEAD. */
 	load_icode(e, binary, size);
-//	LIST_INSERT_TAIL(&env_sched_list[0],e,env_sched_link);
+	LIST_INSERT_TAIL(&env_sched_list[0],e,env_sched_link);
 
 }
 /* Overview:
