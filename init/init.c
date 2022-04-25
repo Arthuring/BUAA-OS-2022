@@ -26,8 +26,9 @@ void mips_init()
 	ENV_CREATE_PRIORITY(user_B, 1);
 
 
-//	trap_init();
-//	kclock_init();
+	trap_init();
+	kclock_init();
+//	env_run(envs);
 	panic("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 	while(1);
 	panic("init.c:\tend of mips_init() reached!");

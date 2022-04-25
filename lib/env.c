@@ -299,7 +299,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 			if((r = page_alloc(&p)) < 0 ){
 					return r;
 			}
-			page_insert(env->env_pgdir,p,va,PTE_R);
+			page_insert(env->env_pgdir, p ,va+i ,PTE_R);
 		}
 		size = BY2PG - offset;
 		if(bin_size < size){
@@ -316,29 +316,23 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		page_insert(env->env_pgdir, p, va + i, PTE_R );
 		size = (BY2PG < (bin_size-i)) ? BY2PG : (bin_size - i);
 		bcopy((void *)bin + i, (void *)(page2kva(p)), size);
-		i += BY2PG;
+		i += size;
 	}
 
-//	printf("i + va : %x\n", va + i);
         /* Hint: You should alloc a new page. */
 
     /* Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
      * hint: variable `i` has the value of `bin_size` now! */
-	offset = va + i - ROUNDDOWN(va + i, BY2PG);
-//	printf("offset: %x\n", offset );
+	offset = va + i - ROUNDDOWN(va+i, BY2PG);
 	if(offset){
-		p = page_lookup(env->env_pgdir,va+i,NULL);
-		if(p == 0){
+		p = page_lookup(env->env_pgdir, va+i, NULL);
+		if(p ==0){
 			r = page_alloc(&p);
-			if(r != 0){
-				return r;
-			}
-			page_insert(env->env_pgdir, p, va+i,PTE_R);
+			if(r != 0) return r;
+			page_insert(env->env_pgdir, p, va+i, PTE_R);
 		}
 		size = MIN(sgsize - i, BY2PG - offset);
-//		printf("bzero: p: %x, p+offset : %x\n ", page2kva(p),page2kva(p) + offset);
 		bzero((void *)(page2kva(p) + offset), size);
-//		printf("bzeroend: end p: %x\n", page2kva(p)+offset + size);
 		i = i + size;
 	}	
    	while (i < sgsize) {
@@ -346,16 +340,9 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 			return r;
 		}
 		page_insert(env->env_pgdir, p, va+i, PTE_R);
-		size = BY2PG;
-		bzero((void *)page2kva(p), size);
-		i += BY2PG;
+		size = MIN(BY2PG,sgsize - i);
+		i += size;
     }
-//	offset = va + i - ROUNDDOWN(va+i,BY2PG);
-//	if(offset > 0){
-//		size = BY2PG - offset;
-//		bzero((void *)page2kva(p)+offset, size);
-//		i += size;
-//	}
     return 0;
 }
 /* Overview:
@@ -393,7 +380,7 @@ load_icode(struct Env *e, u_char *binary, u_int size)
 	
     /* Step 2: Use appropriate perm to set initial stack for new Env. */
     /* Hint: Should the user-stack be writable? */
-	perm = PTE_R;
+	perm = PTE_V | PTE_R;
 	r = page_insert(e->env_pgdir, p, USTACKTOP - BY2PG, perm);
 	if(r != 0){
 		return;
@@ -542,7 +529,7 @@ env_run(struct Env *e)
 	if(curenv != NULL){
 
 		struct Trapframe *old;
-		old = (struct Trapframp * )(TIMESTACK - sizeof(struct Trapframe));
+		old = (struct Trapframe * )(TIMESTACK - sizeof(struct Trapframe));
 		bcopy((void *)old, (void *)(&(curenv->env_tf)), sizeof(struct Trapframe));
 		curenv->env_tf.pc = curenv->env_tf.cp0_epc;
 	}
@@ -552,7 +539,7 @@ env_run(struct Env *e)
 	curenv->env_runs++;
 
     /* Step 3: Use lcontext() to switch to its address space. */
-	lcontext((u_int)e->env_pgdir);
+	lcontext((u_int)(curenv->env_pgdir));
 
     /* Step 4: Use env_pop_tf() to restore the environment's
      *   environment   registers and return to user mode.
@@ -560,7 +547,7 @@ env_run(struct Env *e)
      * Hint: You should use GET_ENV_ASID there. Think why?
      *   (read <see mips run linux>, page 135-144)
      */
-	env_pop_tf(&(e->env_tf), GET_ENV_ASID(e->env_id));
+	env_pop_tf(&(curenv->env_tf), GET_ENV_ASID(curenv->env_id));
 
 }
 
