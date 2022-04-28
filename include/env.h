@@ -28,10 +28,6 @@ struct Env {
 	u_int env_cr3;
 	LIST_ENTRY(Env) env_sched_link;
 	u_int env_pri;
-//	u_int last_son_id;
-//	u_int pre_id;
-//	u_int nxt_id;
-//	u_int first_son_id;
 	// Lab 4 IPC
 	u_int env_ipc_value;            // data value sent to us 
 	u_int env_ipc_from;             // envid of the sender  
@@ -62,8 +58,6 @@ void env_destroy(struct Env *e);
 
 int envid2env(u_int envid, struct Env **penv, int checkperm);
 void env_run(struct Env *e);
-//u_int fork(struct Env *e);
-//int lab3_get_sum(u_int env_id);
 
 // for the grading script
 #define ENV_CREATE2(x, y) \

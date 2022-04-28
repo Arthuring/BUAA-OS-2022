@@ -21,44 +21,6 @@ extern Pde *boot_pgdir;
 extern char *KERNEL_SP;
 
 static u_int asid_bitmap[2] = {0}; // 64
-/*
-u_int fork(struct Env* e){
-	struct Env* new;
-	if(env_alloc(&new, e->env_id)<0){
-		return -1;
-	}
-	new->env_status = e->env_status;
-	new->env_pgdir = e->env_pgdir;
-	new->env_cr3 = e->env_cr3;
-	new->env_pri = e->env_pri;
-	new->env_id = e->env_id;
-	new->env_parent_id = e->env_id;
-	
-	new->pre_id = e->last_son_id;
-	if(new->pre_id !=0) GETENV_ID(new->pre_id)->nxt_id = new->env_id;
-	new->nxt_id = new->last_son_id  = new->first_son_id = 0;
-	e->last_son_id = new->env_id;
-	if(e->first_son_id == 0) e->first_son_id = new->env_id;
-
-	return new->env_id;
-
-}
-
-void lab3_output(u_int env_id){
-
-	struct Env *e = GETENV_ID(env_id);
-	printf("%08x %08x %08x %08x\n",e->env_parent_id, e->first_son_id, e->pre_id, e->nxt_id);
-}
-
-int lab3_get_sum(u_int env_id){
-	int ret = 1,i;
-	struct Env *e = GETENV_ID(env_id);
-	for(i = e->first_son_id; i;i = e->nxt_id){
-		e = GETENV_ID(env_id);
-		ret += lab3_get_sum(i);
-	}
-	return ret;
-}*/
 
 /* Overview:
  *  This function is to allocate an unused ASID
