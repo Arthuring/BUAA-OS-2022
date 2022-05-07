@@ -291,9 +291,8 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
     u_long i = 0;
     int r;
     u_long offset = va - ROUNDDOWN(va, BY2PG);
-	int size;
-//	printf("sgsize: %x, bin_size: %x\n", sgsize,bin_size);
-//	printf("sgend: %x, bin_end: %x\n",va+sgsize, va+bin_size);
+	int size = 0;
+	/*
 	if(offset > 0){
 		p = page_lookup(env->env_pgdir, va + i, NULL);
 		if(p == 0){
@@ -307,23 +306,27 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 			size = bin_size;
 		}
 		bcopy((void *)bin, (void *)(page2kva(p) + offset), size);
-	}
-	i = size;
+		i = i + size;
+	}*/
+
     /* Step 1: load all content of bin into memory. */
-    while(i < bin_size){
+    /*
+	while(i < bin_size){
 		if((r = page_alloc(&p)) < 0){
 			return r;
 		}
 		page_insert(env->env_pgdir, p, va + i, PTE_R );
-		size = (BY2PG < (bin_size-i)) ? BY2PG : (bin_size - i);
+		size = MIN(BY2PG, bin_size - i);
 		bcopy((void *)bin + i, (void *)(page2kva(p)), size);
 		i += size;
 	}
+	*/
 
         /* Hint: You should alloc a new page. */
 
     /* Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
      * hint: variable `i` has the value of `bin_size` now! */
+	/*
 	offset = va + i - ROUNDDOWN(va+i, BY2PG);
 	if(offset){
 		p = page_lookup(env->env_pgdir, va+i, NULL);
@@ -333,7 +336,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 			page_insert(env->env_pgdir, p, va+i, PTE_R);
 		}
 		size = MIN(sgsize - i, BY2PG - offset);
-		bzero((void *)(page2kva(p) + offset), size);
+	//	bzero((void *)(page2kva(p) + offset), size);
 		i = i + size;
 	}	
    	while (i < sgsize) {
@@ -344,7 +347,44 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		size = MIN(BY2PG,sgsize - i);
 		i += size;
     }
-    return 0;
+    return 0;*/
+	/* !!!失败就返回小于0的数 */
+    //printf("***********--Start load_icode_mapper()--***********\n");
+	/*Step 1: load all content of bin into memory. */
+
+    /* 第一部分, 不对齐要单独处理*/ 
+    if(offset > 0) {
+        size = BY2PG - offset; // 剩余的部分
+        if( page_alloc(&p) == - E_NO_MEM) return - E_NO_MEM;
+        p -> pp_ref ++ ;
+        /* 将虚拟地址va与刚申请的物理页建立映射 */
+        page_insert(env -> env_pgdir, p, va - offset, PTE_R);
+        /* 将bin里的内容存到刚申请的物理页内存中 */
+        bcopy((void *)bin, (void *)(page2kva(p) + offset), MIN(bin_size, size) );
+    }
+
+    /*第二部分, 已经对齐了, 就正常处理*/
+	for (i = size; i < bin_size; i += BY2PG) {
+		/* Hint: You should alloc a page and increase the reference count of it. */
+        if( page_alloc(&p) == - E_NO_MEM) return - E_NO_MEM;
+        p -> pp_ref ++ ;
+        /* 将虚拟地址va + i与刚申请的物理页建立映射 */
+        page_insert(env -> env_pgdir, p, va + i, PTE_R) ;
+        /* 将bin里的内容存到刚申请的物理页内存中 */
+        bcopy((void * )(bin + i), (void *)page2kva(p), MIN(bin_size - i, BY2PG) ); //这里也有个地方要注意, 就是末尾可能不对齐
+	}
+	/*Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
+    * i has the value of `bin_size` now. */
+    /*第三部分, 物理页填充0*/
+	while (i < sgsize) {
+        if( page_alloc(&p) == - E_NO_MEM) return - E_NO_MEM;
+        p -> pp_ref ++ ;
+        page_insert(env -> env_pgdir, p, va + i, PTE_R) ;
+        /*page_alloc 函数已经调用了清0函数, 这里就不再需要了 */
+        i += BY2PG;
+	}
+    //printf("***********--End load_icode_mapper()--***********\n");
+	return 0;
 }
 /* Overview:
  *  Sets up the the initial stack and program binary for a user process.
