@@ -83,16 +83,33 @@ static void
 pgfault(u_int va)
 {
 	u_int *tmp;
+	u_long perm;
+	perm = ((Pte *)(*vpt))[VPN(va)] & (BY2PG -1);
+	tmp = (u_int *)USTACKTOP;
+	int r;
 	//	writef("fork.c:pgfault():\t va:%x\n",va);
+	if((perm & PTE_COW) == 0){
+		user_panic("this is not a COW page");
+	}
 
+	perm = perm & (~PTE_COW);
 	//map the new page at a temporary place
-
+	r = syscall_mem_alloc(0, (u_int)tmp,perm);
+	if(r < 0){
+		return r;
+	}
 	//copy the content
-
+	user_bcopy(ROUNDDOWN(va,BY2PG), tmp, BY2PG);
 	//map the page on the appropriate place
-
+	r = syscall_mem_map(0, tmp, 0, va, perm);
+	if(r < 0){
+		user_panic("failed to mem map");
+	}
 	//unmap the temporary place
-
+	r  = syscall_mem_unmap(0, tmp);
+	if(r < 0){
+		return r;
+	}
 }
 
 /* Overview:
@@ -117,7 +134,19 @@ duppage(u_int envid, u_int pn)
 {
 	u_int addr;
 	u_int perm;
+	int flag = 0;
 
+	addr = pn << PGSHIFT;
+	perm = (*vpt)[pn] & (BY2PG - 1);
+	
+	if((perm & PTE_R) && !(perm & PTE_LIBRARY)){
+		perm |= PTE_COW;
+		flag = 1;
+	}
+	syscall_mem_map(0, addr, envid, addr, perm);
+	if(flag){
+		syscall_mem_map(0, addr, 0, addr, perm);
+	}
 	//	user_panic("duppage not implemented");
 }
 
@@ -143,10 +172,24 @@ fork(void)
 
 
 	//The parent installs pgfault using set_pgfault_handler
+	set_pgfault_handler(pgfault);
 
 	//alloc a new alloc
-
-
+	newenvid = syscall_env_alloc();
+	if(newenvid == 0){
+		env = envs + ENVX(syscall_getenvid());
+	}
+	if(newenvid){
+		for(i = 0; i < VPN(USTACKTOP); i++){
+			if((((Pde *)(*vpd))[i >> 10] & PTE_V ) && (((Pte *)(*vpt))[i] & PTE_V) ){
+		duppage(newenvid, i);	
+			}
+		}
+	
+		syscall_mem_alloc(newenvid, UXSTACKTOP - BY2PG, PTE_V|PTE_R);
+		syscall_set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP);
+		syscall_set_env_status(newenvid, ENV_RUNNABLE);
+	}
 	return newenvid;
 }
 
