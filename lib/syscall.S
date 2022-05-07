@@ -36,7 +36,7 @@ NESTED(handle_sys,TF_SIZE, sp)
 	lw a3, TF_REG7(sp)
 	addiu sp, sp, -24
 	sw t3, 16(sp)
-	sw t4, 16(sp)
+	sw t4, 20(sp)
 	
     jalr    t2                          // Invoke sys_* function
     nop
