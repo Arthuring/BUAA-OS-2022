@@ -330,8 +330,12 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 			page_insert(env->env_pgdir, p, va + i, PTE_R);
 		}
 		size = MIN(bin_size - i, BY2PG - offset);
-		bcopy((void*)bin, (void*)(page2kva(p) + offset), size);
-		i = i + size;
+		int sizeTemp = size;
+		for(;(page2kva(p)+offset) % 4 != 0 && sizeTemp > 0; sizeTemp--,offset++,i++){
+			*(char *)(page2kva(p)+offset) = *(char *)(bin + i);
+		}
+		bcopy((void*)bin, (void*)(page2kva(p) + offset), sizeTemp);
+		i = i + sizeTemp;
 	}
 	/*Step 1: load all content of bin into memory. */
 	//for (; i < bin_size; i += BY2PG) 
