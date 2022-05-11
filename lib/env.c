@@ -293,30 +293,98 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
     u_long offset = va - ROUNDDOWN(va, BY2PG);
 	int size = 0;
 	/*Step 1: load all content of bin into memory. */
-
+/*
     if(offset > 0) {
         size = BY2PG - offset; // 剩余的部分
         if( page_alloc(&p) == - E_NO_MEM) return - E_NO_MEM;
         p -> pp_ref ++ ;
         page_insert(env -> env_pgdir, p, va - offset, PTE_R);
         bcopy((void *)bin, (void *)(page2kva(p) + offset), MIN(bin_size, size) );
-    }
+    }*/
 
-	for (i = size; i < bin_size; i += BY2PG) {
+	/*for (i = size; i < bin_size; i += BY2PG) {*/
 		/* Hint: You should alloc a page and increase the reference count of it. */
-        if( page_alloc(&p) == - E_NO_MEM) return - E_NO_MEM;
+      /*  if( page_alloc(&p) == - E_NO_MEM) return - E_NO_MEM;
         p -> pp_ref ++ ;
         page_insert(env -> env_pgdir, p, va + i, PTE_R) ;
         bcopy((void * )(bin + i), (void *)page2kva(p), MIN(bin_size - i, BY2PG) ); //这里也有个地方要注意, 就是末尾可能不对齐
-	}
+	}*/
 	/*Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
     * i has the value of `bin_size` now. */
-	while (i < sgsize) {
+	/*while (i < sgsize) {
         if( page_alloc(&p) == - E_NO_MEM) return - E_NO_MEM;
         p -> pp_ref ++ ;
         page_insert(env -> env_pgdir, p, va + i, PTE_R) ;
         i += BY2PG;
+	}*/
+	if (offset)
+	{
+		p = page_lookup(env->env_pgdir, va + i, NULL);
+		if(p == 0)
+		{
+			r = page_alloc(&p);
+			if (r != 0)
+			{
+				return r;
+			}
+			page_insert(env->env_pgdir, p, va + i, PTE_R);
+		}
+		size = MIN(bin_size - i, BY2PG - offset);
+		bcopy((void*)bin, (void*)(page2kva(p) + offset), size);
+		i = i + size;
 	}
+	/*Step 1: load all content of bin into memory. */
+	//for (; i < bin_size; i += BY2PG) 
+	// printf("Offset 1 OK!\n");
+	while (i < bin_size)
+	{
+		/* Hint: You should alloc a page and increase the reference count of it. */
+		size = MIN(BY2PG, bin_size - i);
+		r = page_alloc(&p);
+		if (r != 0)
+		{
+			return r;
+		}
+		page_insert(env->env_pgdir, p ,va + i, PTE_R);
+		bcopy((void*)bin + i, (void*)(page2kva(p)), size);
+		i += size;
+	}
+	// printf("binsize OK!\n");
+	/*Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
+    * i has the value of `bin_size` now. */
+	offset = va + i - ROUNDDOWN(va + i, BY2PG);
+	if (offset)
+	{
+		p = page_lookup(env->env_pgdir, va + i, NULL);
+		if(p == 0)
+		{
+			r = page_alloc(&p);
+			if (r != 0)
+			{
+				return r;
+			}
+			page_insert(env->env_pgdir, p, va + i, PTE_R);
+		}
+		size = MIN(sgsize - i, BY2PG - offset);
+		int sizeTemp = size;
+		for(;(page2kva(p) + offset)%4 != 0 && sizeTemp > 0 ;*(char *)(page2kva(p) + offset)=0,offset++,sizeTemp--);
+		bzero((void*)(page2kva(p) + offset), sizeTemp);
+		i = i + size;
+	}
+	while (i < sgsize) {
+		size = MIN(BY2PG, sgsize - i);
+		r = page_alloc(&p);
+		if (r != 0)
+		{
+			return r;
+		}
+		page_insert(env->env_pgdir, p, va + i, PTE_R);
+		int sizeTemp = size;
+		//for(;(page2kva(p) + offset)%4 != 0 && sizeTemp > 0 ;*(char *)(page2kva(p) + offset)=0,offset++,sizeTemp--);
+		//bzero((void*)page2kva(p), sizeTemp);
+		i += size;
+	}
+
 	return 0;
 }
 /* Overview:
