@@ -12,7 +12,7 @@
  *  3. CANNOT use `return` statement!
  */
 /*** exercise 3.15 ***/
-//struct Env *e = NULL;
+struct Env *e = NULL;
 void sched_yield(void)
 {
     static int count = 0; // remaining time slices of current env
@@ -30,7 +30,7 @@ void sched_yield(void)
      *  functions or macros below may be used (not all):
      *  LIST_INSERT_TAIL, LIST_REMOVE, LIST_FIRST, LIST_EMPTY
      */
-	/*
+	
 	e = curenv;
 	if(count == 0 || e == NULL || e->env_status == ENV_NOT_RUNNABLE ){
 		do{
@@ -52,7 +52,8 @@ void sched_yield(void)
 				point = 1- point;
 			}	
 		} while(e == NULL || e->env_status != ENV_RUNNABLE);
-	}*/
+	}
+	/*
 	if(count == 0 || e == NULL || e->env_status != ENV_RUNNABLE){
 		if(e != NULL){
 			LIST_REMOVE(e, env_sched_link);
@@ -71,7 +72,7 @@ void sched_yield(void)
 				}
 			}
 		}
-	}
+	}*/
 
 	count --;
 	
