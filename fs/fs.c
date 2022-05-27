@@ -85,15 +85,25 @@ void
 unmap_block(u_int blockno)
 {
 	int r;
-
+	u_int addr;
 	// Step 1: check if this block is mapped.
-
+	addr = block_is_mapped(blockno);
+	if(addr == 0){
+		return;
+	}
 	// Step 2: use block_is_free，block_is_dirty to check block,
 	// if this block is used(not free) and dirty, it needs to be synced to disk: write_block
 	// can't be unmap directly.
+	if(!block_is_free(blockno) && block_is_dirty(blockno)){
+		write_block(blockno);
+	}
+
 
 	// Step 3: use 'syscall_mem_unmap' to unmap corresponding virtual memory.
-
+	r = syscall_mem_unmap(0, addr);
+	if(r < 0){
+		user_panic("umap_block failed");
+	}
 	// Step 4: validate result of this unmap operation.
 	user_assert(!block_is_mapped(blockno));
 }
@@ -116,6 +126,7 @@ unmap_block(u_int blockno)
 int
 read_block(u_int blockno, void **blk, u_int *isnew)
 {
+	//writef("read_block in \n");
 	u_int va;
 
 	// Step 1: validate blockno. Make file the block to read is within the disk.
@@ -156,6 +167,7 @@ read_block(u_int blockno, void **blk, u_int *isnew)
 	if (blk) {
 		*blk = (void *)va;
 	}
+	//writef("read block retutn \n");
 	return 0;
 }
 
@@ -209,7 +221,7 @@ free_block(u_int blockno)
 	}
 	// Step 2: Update the flag bit in bitmap.
 	// you can use bit operation to update flags, such as  a |= (1 << n) .
-	bitmap[blockno/ 32] |= (1 << (blockno % 32));
+	bitmap[blockno / 32] |= (1 << (blockno % 32));
 }
 
 // Overview:
@@ -298,6 +310,7 @@ read_super(void)
 void
 read_bitmap(void)
 {
+	//writef("read bit map begin\n");
 	u_int i;
 	void *blk = NULL;
 
@@ -319,7 +332,7 @@ read_bitmap(void)
 	for (i = 0; i < nbitmap; i++) {
 		user_assert(!block_is_free(i + 2));
 	}
-
+	//writef("read bit map return\n");
 	writef("read_bitmap is good\n");
 }
 
@@ -332,20 +345,44 @@ check_write_block(void)
 
 	// backup the super block.
 	// copy the data in super block to the first block on the disk.
+	//<<<<<<<<<<<<<<<<
+	//writef("read begin\n");
+	//>>>>>>>>>>>>>>>>>
+	
 	read_block(0, 0, 0);
 	user_bcopy((char *)diskaddr(1), (char *)diskaddr(0), BY2PG);
 
+	//<<<<<<<<<<<<<<<<
+	//writef("read end\n");
+	//>>>>>>>>>>>>>>>>>
+	
+	
+	//<<<<<<<<<<<<<<<<
+	//writef("write begin\n");
+	//>>>>>>>>>>>>>>>>>>>>	
 	// smash it
 	strcpy((char *)diskaddr(1), "OOPS!\n");
 	write_block(1);
 	user_assert(block_is_mapped(1));
+	
+	//<<<<<<<<<<<<<<<<
+	//writef("write end\n");
+	//>>>>>>>>>>>>>>>>>>>>	
 
 	// clear it out
 	syscall_mem_unmap(0, diskaddr(1));
+	
+	
 	user_assert(!block_is_mapped(1));
-
+	//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	//writef("before read\n");
+	//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	// validate the data read from the disk.
 	read_block(1, 0, 0);
+	//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	//writef("read end\n");
+	//writef("my ans: %s\n", (char *)diskaddr(1));
+	//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	user_assert(strcmp((char *)diskaddr(1), "OOPS!\n") == 0);
 
 	// restore the super block.

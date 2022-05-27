@@ -208,7 +208,7 @@ int make_link_block(struct File *dirf, int nblk) {
 /*** exercise 5.4 ***/
 struct File *create_file(struct File *dirf) {
     struct File *dirblk;
-    int i, bno, found;
+    int i,j, bno, found;
     int nblk = dirf->f_size / BY2BLK;
 
     // Your code here
@@ -216,7 +216,7 @@ struct File *create_file(struct File *dirf) {
     //        calculate the correct block number.
 	for(i = 0; i < nblk; i++){
 		if(i < NDIRECT){
-			bno = dirf->f_direct[i]
+			bno = dirf->f_direct[i];
 		}else{
 			bno = ((uint32_t *)(disk[dirf->f_indirect].data))[i];
 		}

@@ -139,7 +139,7 @@ fsipc_remove(const char *path)
 	// Step 3: Copy path to path in req.
 	strcpy((char *)req->req_path, path);
 	// Step 4: Send request to fs server with IPC.
-	return fsipc(FSTEQ_REMOVE. req, 0, 0);
+	return fsipc(FSREQ_REMOVE, req, 0, 0);
 }
 
 // Overview:
