@@ -306,13 +306,16 @@ int pgdir_walk(Pde *pgdir, u_long va, int create, Pte **ppte)
 	/* Step 2: If the corresponding page table is not exist(valid) and parameter `create`
 	 * is set, create one. And set the correct permission bits for this new page table.
 	 * When creating new page table, maybe out of memory. */
-	if((*pgdir_entryp & PTE_V) == 0){
+	if(! ((*pgdir_entryp) & PTE_V)){
 		if(create){
-			if((ret = page_alloc(&ppage)) < 0 ) return ret;
+			if((ret = page_alloc(&ppage)) < 0 ){
+			   	*ppte = NULL;
+				return ret;
+			}
 			*pgdir_entryp = (page2pa(ppage) | PTE_V | PTE_R );
 			ppage->pp_ref++;//login256 marked ! 
 		} else {
-			*ppte = 0;
+			*ppte = NULL;
 			return 0;
 		}
 	}
@@ -358,9 +361,15 @@ int page_insert(Pde *pgdir, struct Page *pp, u_long va, u_int perm)
 
 	/* hint: use tlb_invalidate function */
 	tlb_invalidate(pgdir,va);
-	if((ret = pgdir_walk(pgdir, va, 1, &pgtable_entry)) < 0){
-		return ret;
+//	if((ret = pgdir_walk(pgdir, va, 1, &pgtable_entry)) < 0){
+//		return ret;
+//	}
+
+	pgdir_walk(pgdir, va, 1, &pgtable_entry);
+	if(pgtable_entry == 0){
+		return -E_NO_MEM;
 	}
+
 	*pgtable_entry = (page2pa(pp)) | PERM;
 	pp->pp_ref++;
 	return 0;
@@ -370,7 +379,6 @@ int page_insert(Pde *pgdir, struct Page *pp, u_long va, u_int perm)
 
 	/* Step 3.2 Insert page and increment the pp_ref */
 
-	return 0;
 }
 
 /*Overview:

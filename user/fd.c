@@ -198,6 +198,7 @@ read(int fdnum, void *buf, u_int n)
 	// Step 2: Check open mode.
 	if((fd->fd_omode & O_ACCMODE) == O_WRONLY){
 		writef("[%08x] read %d -- bad mode\n", env->env_id, fdnum);
+		return -E_INVAL;
 	}
 	if(debug) writef("read %d %p %d via dev %s\n", fdnum,buf,n,dev->dev_name);
 	
