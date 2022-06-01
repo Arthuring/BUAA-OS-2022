@@ -34,18 +34,23 @@ ide_read(u_int diskno, u_int secno, void *dst, u_int nsecs)
 	while (offset_begin + offset < offset_end) {
 		// Your code here
 		// error occurred, then panic.
+		//diskno
 		temp = diskno;
 		if(syscall_write_dev((int)&temp, 0x13000010, 4)) 
 			user_panic("error in ide_read()\n");
+		//offset
 		temp = offset_begin + offset;
 		if(syscall_write_dev((int)&temp, 0x13000000, 4))
 			user_panic("error_in_read()\n");
+		//start read
 		temp = 0;
 		if(syscall_write_dev((int)&temp, 0x13000020, 4))
 			user_panic("error in ide_read()\n");
+		//check success
 		if(syscall_read_dev((int)&temp, 0x13000030, 4))
 			user_panic("error in ide_read()\n");
 		if (temp == 0) user_panic("error in ide_read()\n");
+		//read from buffer
 		if(syscall_read_dev((int)(dst + offset), 0x13004000, 512))
 			user_panic("error in ide_read()\n");
 		offset += 0x200;
@@ -97,7 +102,7 @@ ide_write(u_int diskno, u_int secno, void *src, u_int nsecs)
 		temp = 1;
 		if(syscall_write_dev((int)&temp, 0x13000020, 4))
 			user_panic("error in ide_write()");
-		if(syscall_write_dev((int)&temp,0x13000030,4))
+		if(syscall_read_dev((int)&temp,0x13000030,4))
 			user_panic("error in ide_write()");
 		if(temp == 0)
 			user_panic("error in ide_write()");
