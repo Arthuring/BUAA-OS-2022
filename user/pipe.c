@@ -95,9 +95,6 @@ _pipeisclosed(struct Fd *fd, struct Pipe *p)
 	}else{
 		return 0;
 	}
-
-
-
 	user_panic("_pipeisclosed not implemented");
 //	return 0;
 }
@@ -231,8 +228,9 @@ pipestat(struct Fd *fd, struct Stat *stat)
 static int
 pipeclose(struct Fd *fd)
 {
+	struct Fd *tmp = fd;
 	syscall_mem_unmap(0,fd);
-	syscall_mem_unmap(0, fd2data(fd));
+	syscall_mem_unmap(0, fd2data(tmp));
 	return 0;
 }
 
