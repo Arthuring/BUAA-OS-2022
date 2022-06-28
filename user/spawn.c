@@ -288,9 +288,8 @@ int spawn(char *prog, char **argv)
 		}
 		text_start += entry_size;
 	}
-	
+	close(fd);	
 	// Your code ends here
-
 	struct Trapframe *tf;
 	writef("\n::::::::::spawn size : %x  sp : %x::::::::\n",size,esp);
 	tf = &(envs[ENVX(child_envid)].env_tf);

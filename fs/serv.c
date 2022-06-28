@@ -118,8 +118,23 @@ serve_open(u_int envid, struct Fsreq_open *rq)
 	// Open the file.
 	if ((r = file_open((char *)path, &f)) < 0) {
 	//	user_panic("file_open failed: %d, invalid path: %s", r, path);
-		ipc_send(envid, r, 0, 0);
-		return ;
+		if(r == -E_NOT_FOUND && ((req->req_omode & O_CREAT) != 0)) {
+			if((r = file_create((char*)path, &f)) < 0 ){
+				ipc_send(envid, r, 0, 0);
+				return;
+			}
+			f->f_type = FTYPE_REG;
+		}else if(r == -E_NOT_FOUND && ((req->req_omode & O_MKDIR)) != 0 ){
+			if((r = file_create((char*)path, &f)) < 0 ){
+				ipc_send(envid, r, 0, 0);
+				return;
+			}
+			f->f_type = FTYPE_DIR;
+		} else {
+			ipc_send(envid, r, 0, 0);
+			return;
+		}
+	
 	}
 
 	// Save the file pointer.

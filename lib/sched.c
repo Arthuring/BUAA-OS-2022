@@ -32,6 +32,7 @@ void sched_yield(void)
      */
 	
 	e = curenv;
+	/*
 	if(count == 0 || e == NULL || e->env_status == ENV_NOT_RUNNABLE ){
 		do{
 			e = LIST_FIRST( &env_sched_list[point]);
@@ -52,8 +53,8 @@ void sched_yield(void)
 				point = 1- point;
 			}	
 		} while(e == NULL || e->env_status != ENV_RUNNABLE);
-	}
-	/*
+	}*/
+	
 	if(count == 0 || e == NULL || e->env_status != ENV_RUNNABLE){
 		if(e != NULL){
 			LIST_REMOVE(e, env_sched_link);
@@ -72,7 +73,7 @@ void sched_yield(void)
 				}
 			}
 		}
-	}*/
+	}
 
 	count --;
 	

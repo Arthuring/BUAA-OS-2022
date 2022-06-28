@@ -83,6 +83,7 @@ runcmd(char *s)
 	char *argv[MAXARGS], *t;
 	int argc, c, i, r, p[2], fd, rightpipe;
 	int fdnum;
+	int run_back = 0, back_id;
 	rightpipe = 0;
 	gettoken(s, 0);
 again:
@@ -165,6 +166,9 @@ again:
 			}
 			//user_panic("| not implemented");
 			break;
+		case '&':
+			run_back = 1;
+			break;	
 		}
 	}
 
@@ -186,7 +190,20 @@ runit:
 	close_all();
 	if (r >= 0) {
 		if (debug_) writef("[%08x] WAIT %s %08x\n", env->env_id, argv[0], r);
-		wait(r);
+		if(!run_back){
+			wait(r);
+		}else{
+			back_id = fork();
+			if(back_id == 0){
+				wait(r);
+				writef("\n[%08x] COMPLICT\t", r);
+				for(i = 0; i<argc;i++){
+					writef("%s ", argv[i]);
+				}
+
+				exit();
+			}
+		}
 	}
 	if (rightpipe) {
 		if (debug_) writef("[%08x] WAIT right-pipe %08x\n", env->env_id, rightpipe);
