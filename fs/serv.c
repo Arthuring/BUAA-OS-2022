@@ -44,6 +44,27 @@ serve_init(void)
 	}
 }
 
+
+void
+serve_create(u_int envid, struct Fsreq_create *rq){
+	u_char path[MAXPATHLEN];
+	int isdir = rq -> req_isdir;
+
+	struct File *f;
+	int fileid;
+	int r;
+
+	user_bcopy(rq->req_path, path, MAXPATHLEN);
+	path[MAXPATHLEN - 1] = 0;
+	
+	if((r = file_create((char *)path, &f)) < 0 ){
+		ipc_send(envid, r, 0, 0);
+		return;
+	}
+	f->f_type = isdir;
+	ipc_send(envid, 0, 0, 0);
+}
+
 // Overview:
 //	Allocate an open file.
 int
@@ -303,7 +324,9 @@ serve(void)
 			case FSREQ_SYNC:
 				serve_sync(whom);
 				break;
-
+			case FSREQ_CREATE:
+				serve_create(whom, (struct Fsreq_create *)REQVA);
+				break;
 			default:
 				writef("Invalid request code %d from %08x\n", whom, req);
 				break;

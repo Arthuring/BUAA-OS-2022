@@ -20,6 +20,11 @@ struct Dev devfile = {
 	.dev_stat =	file_stat,
 };
 
+int user_create(char* path, int isdir){
+	int r = fsipc_create(path, isdir);
+	return r;
+}
+
 
 // Overview:
 //	Open a file (or directory).

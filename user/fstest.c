@@ -62,6 +62,10 @@ void umain()
 	if((r = open("/newmotd", O_RDONLY))>=0){
 		user_panic("open after remove /newmotd: %d",r);
 	}
+	
+	r = user_create("/hihi", 0);
+	writef("create_result is %d\n", r);
+	
 	writef("file remove: OK\n");
         while (1) {
                 //writef("IDLE!");
