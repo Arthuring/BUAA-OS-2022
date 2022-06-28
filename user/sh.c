@@ -136,21 +136,6 @@ again:
 			//user_panic("> redirection not implemented");
 			//break;
 		case '|':
-			// Your code here.
-			// 	First, allocate a pipe.
-			//	Then fork.
-			//	the child runs the right side of the pipe:
-			//		dup the read end of the pipe onto 0
-			//		close the read end of the pipe
-			//		close the write end of the pipe
-			//		goto again, to parse the rest of the command line
-			//	the parent runs the left side of the pipe:
-			//		dup the write end of the pipe onto 1
-			//		close the write end of the pipe
-			//		close the read end of the pipe
-			//		set "rightpipe" to the child envid
-			//		goto runit, to execute this piece of the pipeline
-			//			and then wait for the right side to finish
 			pipe(p);
 			if((rightpipe = fork()) == 0){
 				dup(p[0], 0);
@@ -168,11 +153,14 @@ again:
 			break;
 		case '&':
 			run_back = 1;
+			break;
+		case ';':
 			break;	
 		}
 	}
 
 runit:
+
 	if(argc == 0) {
 		if (debug_) writef("EMPTY COMMAND\n");
 		return;
@@ -187,20 +175,31 @@ runit:
 
 	if ((r = spawn(argv[0], argv)) < 0)
 		writef("spawn %s: %e\n", argv[0], r);
+	
+	int temp;
+	temp = r;
+	if((r = syscall_set_env_status(r, ENV_RUNNABLE)) < 0){
+		writef("set child status wrong");
+	}
+	r = temp;
 	close_all();
 	if (r >= 0) {
-		if (debug_) writef("[%08x] WAIT %s %08x\n", env->env_id, argv[0], r);
 		if(!run_back){
+		if (debug_) writef("[%08x] WAIT %s %08x\n", env->env_id, argv[0], r);
 			wait(r);
 		}else{
 			back_id = fork();
 			if(back_id == 0){
+				writef("\n[%08x] running\t", r);
+				for(i=0; i<argc; i++){
+					writef("%s ", argv[i]);
+				}
 				wait(r);
-				writef("\n[%08x] COMPLICT\t", r);
+				writef("\n[%08x] done\t", r);
 				for(i = 0; i<argc;i++){
 					writef("%s ", argv[i]);
 				}
-
+				writef("\n");
 				exit();
 			}
 		}
@@ -237,8 +236,7 @@ readline(char *buf, u_int n)
 		}
 	}
 	writef("line too long\n");
-	while((r = read(0, buf, 1)) == 1 && buf[0] != '\n')
-		;
+	while((r = read(0, buf, 1)) == 1 && buf[0] != '\n');
 	buf[0] = 0;
 }	
 
