@@ -33,11 +33,20 @@ _gettoken(char *s, char **p1, char **p2)
 	*p1 = 0;
 	*p2 = 0;
 
+
 	while(strchr(WHITESPACE, *s))
 		*s++ = 0;
 	if(*s == 0) {
 	//	if (debug_ > 1) writef("EOL\n");
 		return 0;
+	}
+	if(*s == '\"'){
+		s++;
+		*p1 = s;
+		while( *s && *s != '\"' && *(s-1) != '\\'  ) s++;
+		s++;
+		*p2 = s;
+		return 'w';
 	}
 	if(strchr(SYMBOLS, *s)){
 		t = *s;
@@ -180,13 +189,13 @@ runit:
 	}
 
 	if ((r = spawn(argv[0], argv)) < 0)
-		writef("spawn %s: %e\n", argv[0], r);
+		writef("spawn %s: %d\n", argv[0], r);
 	
 	int temp;
 	temp = r;
-	if((r = syscall_set_env_status(r, ENV_RUNNABLE)) < 0){
-		writef("set child status wrong");
-	}
+//	if((r = syscall_set_env_status(r, ENV_RUNNABLE)) < 0){
+//		writef("set child status wrong");
+//	}
 	r = temp;
 	close_all();
 	if (r >= 0) {
