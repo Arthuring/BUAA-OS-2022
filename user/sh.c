@@ -84,6 +84,7 @@ runcmd(char *s)
 	int argc, c, i, r, p[2], fd, rightpipe;
 	int fdnum;
 	int run_back = 0, back_id;
+	int isright;
 	rightpipe = 0;
 	gettoken(s, 0);
 again:
@@ -155,6 +156,11 @@ again:
 			run_back = 1;
 			break;
 		case ';':
+			if(isright = fork() == 0 ){
+				goto again;
+			}else{
+				goto runit;
+			}
 			break;	
 		}
 	}
@@ -207,6 +213,10 @@ runit:
 	if (rightpipe) {
 		if (debug_) writef("[%08x] WAIT right-pipe %08x\n", env->env_id, rightpipe);
 		wait(rightpipe);
+	}
+	if(isright){
+		if(debug_) writef("[%08x] WAIT right arg %08x\n", env->env_id, isright);
+		wait(isright);
 	}
 
 	exit();
