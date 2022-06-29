@@ -231,6 +231,46 @@ readn(int fdnum, void *buf, u_int n)
 	return tot;
 }
 
+int read_line(int fdnum, void *buf, u_int n){
+	
+	int r;
+	struct Dev *dev;
+	struct Fd *fd;
+
+	// Similar to 'write' function.
+	// Step 1: Get fd and dev.
+	if((r = fd_lookup(fdnum, &fd)) < 0 || (r = dev_lookup(fd->fd_dev_id, &dev)) < 0 ){
+		return r;
+	}
+	// Step 2: Check open mode.
+	if((fd->fd_omode & O_ACCMODE) == O_WRONLY){
+		writef("[%08x] read %d -- bad mode\n", env->env_id, fdnum);
+		return -E_INVAL;
+	}
+	if(debug) writef("read %d %p %d via dev %s\n", fdnum,buf,n,dev->dev_name);
+	
+	// Step 3: Read starting from seek position.
+	r = (*dev->dev_read)(fd, buf, n, fd->fd_offset);
+	// Step 4: Update seek position and set '\0' at the end of buf.
+	int i = 0;
+	//writef("\n in readline 1: %s\n", buf);
+
+	for(i = 0; i < n && i < r &&((char *)buf)[i] != '\n'; i++);
+	
+	//writef("\n in readline 2: %s\n", buf);
+
+	if(((char *)buf)[i] == '\n'){
+		r = i + 1;
+	}
+	((char *)buf)[i] = '\0';
+	if(r > 0){
+		fd->fd_offset += r;
+	}
+	((char *)buf)[r] = '\0';
+	//writef("\nin read_line: %s\n", (char*)buf);
+	return r;
+}
+
 int
 write(int fdnum, const void *buf, u_int n)
 {

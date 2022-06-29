@@ -113,6 +113,7 @@ int fsipc_create(char *path, int isdir);
 // fd.c
 int	close(int fd);
 int	read(int fd, void *buf, u_int nbytes);
+int read_line(int fd, void * buf, u_int nbytes);
 int	write(int fd, const void *buf, u_int nbytes);
 int	seek(int fd, u_int offset);
 void	close_all(void);
@@ -128,6 +129,10 @@ int	remove(const char *path);
 int	ftruncate(int fd, u_int size);
 int	sync(void);
 int user_create(char* path, int isdir);
+//history.c
+void write_history(char *buf, int n);
+int read_history_cached(char buf[128][128]);
+
 
 #define user_assert(x)	\
 	do {	if (!(x)) user_panic("assertion failed: %s", #x); } while (0)
