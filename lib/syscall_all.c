@@ -58,6 +58,7 @@ char *strcpy(char *dst, const char *src){
 	return ret;
 }
 
+#define ENVVAR_CLEAR (1 << 7)
 #define GET (1 << 6)
 #define LIST (1 << 5)
 #define UNSET (1 << 4)
@@ -83,6 +84,19 @@ int sys_env_var(int sysno, char* name, char* value, u_int env_id, u_int option){
 //	}
 //	printf("envid:%x",env_id);
 //	printf("option: %b", option);
+	if(option & ENVVAR_CLEAR){
+		for(i = 0; i < NHASH; i++ ){
+			if(glob[i] != 1 && envid_list[i] == env_id ){
+				name_list[i][0] = 0;
+				value_list[i][0] = 0;
+				envid_list[i] = 0;
+				glob[i] = 0;
+				readonly[i] = 0;
+			}
+		}
+		return 0;
+	}
+
 	if(option & LIST){
 		printf("\n-------------------ENV_VAR-------------------");
 		for(i=0; i < NHASH ; i++){

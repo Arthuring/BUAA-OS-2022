@@ -75,6 +75,7 @@ char *strcpy(char *dst, const char *src);
 const char *strchr(const char *s, char c);
 void *memcpy(void *destaddr, void const *srcaddr, u_int len);
 int strcmp(const char *p, const char *q);
+char *strcat(char* dst, const char *src);
 
 // ipc.c
 void	ipc_send(u_int whom, u_int val, u_int srcva, u_int perm);
@@ -138,6 +139,9 @@ void declare(int argc, char** argv, u_int env_id);
 void unset(int argc, char** argv, u_int env_id );
 void run_incmd(int argc, char** argv, u_int env_id );
 void getvar(char *name, u_int env_id, char *value);
+void replace_envvar(char *buf, u_int env_id);
+void clear_envvar(u_int env_id, u_int option);
+
 #define user_assert(x)	\
 	do {	if (!(x)) user_panic("assertion failed: %s", #x); } while (0)
 
@@ -154,6 +158,7 @@ void getvar(char *name, u_int env_id, char *value);
 #define O_MKDIR		0x0800		/* create directory, not regular file */
 
 /*ENV VAR OP*/
+#define ENVVAR_CLEAR (1 << 7)
 #define ENVVAR_GET (1 << 6)
 #define ENVVAR_LIST (1 << 5)
 #define ENVVAR_UNSET (1 << 4)

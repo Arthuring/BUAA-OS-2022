@@ -92,8 +92,16 @@ _gettoken(char *s, char **p1, char **p2)
 		s++;
 		*p1 = s;
 		while( *s && *s != '\"' && *(s-1) != '\\'  ) s++;
-		s++;
 		*p2 = s;
+		*s = ' ';
+		return 'w';
+	}
+	if(*s == '\''){
+		s++;
+		*p1 = s;
+		while( *s && *s != '\'' && *(s-1) != '\\'  ) s++;
+		*p2 = s;
+		*s = ' ';
 		return 'w';
 	}
 	if(strchr(SYMBOLS, *s)){
@@ -401,6 +409,11 @@ umain(int argc, char **argv)
 			fwritef(1, "\n$ ");
 		readline(buf, sizeof buf);
 		write_history(buf, strlen(buf));
+		if(buf[0] == 'e' && buf[1] == 'x' && buf[2] == 'i' && buf[3] == 't'){
+			clear_envvar(env_id, ENVVAR_CLEAR);
+			exit();
+		}
+		replace_envvar(buf, env_id);
 		if (buf[0] == '#')
 			continue;
 		if (echocmds)
@@ -416,6 +429,45 @@ umain(int argc, char **argv)
 	}
 }
 
+#define BREAK_SIG " \'\t\r\n$"
+void replace_envvar(char *buf, u_int env_id){
+	int ignore = 0;
+	char* p = buf;
+	char name[32] ={0};
+	int namelen = 0;
+	char value[128] = {0};
+	char temp[1024] = {0};
+	int i;
+	while(*p){
+	//	writef("\nin while");
+		if(*p == '\''){
+			ignore = 1 - ignore;
+			p++;
+		}else if(*p == '$' && !ignore){
+	//		writef("\ngot $");
+			for(namelen = 1; *(p + namelen) != 0 && !(strchr(BREAK_SIG, *(p+namelen))); namelen++){
+		//		writef("\n*p: %c", *(p+namelen));
+				name[namelen-1] = *(p + namelen);
+			}
+	//		writef("\nnamelen %d ", namelen);
+			name[namelen-1] = 0;
+			for(i=0; i<namelen-1;i++){
+	//			writef("\nname[%d] :%c ",i, name[i]);
+			}
+	//		writef("\n name is %s", name);
+			strcpy(temp, p+namelen);
+			getvar(name, env_id, value);
+	//		writef("\nvalue is %s", value);
+		//	p++;
+			strcpy(p, value);
+			p += strlen(value);
+			strcpy(p, temp);
+		}else{
+			p++;
+		}
+	}
+//	writef("\nbuf is %s", buf);
+}
 
 void run_incmd(int argc, char ** argv, u_int env_id){
 	if(strcmp(argv[0], "declare") == 0 ){
@@ -490,4 +542,8 @@ void getvar(char *name, u_int env_id, char* value){
 	u_int option = 0;
 	option |= ENVVAR_GET;
 	syscall_env_var(name, value, env_id, option);
+}
+
+void clear_envvar(u_int env_id, u_int option){
+	syscall_env_var(0, 0, env_id, option);
 }
