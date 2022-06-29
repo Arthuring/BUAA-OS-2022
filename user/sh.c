@@ -135,7 +135,7 @@ gettoken(char *s, char **p1)
 
 #define MAXARGS 16
 void
-runcmd(char *s)
+runcmd(char *s, u_int env_id)
 {
 //	writef("\nrunning : %s", s);
 	char *argv[MAXARGS], *t;
@@ -236,16 +236,21 @@ runit:
 			writef(" %s", argv[i]);
 		writef("\n");
 	}
-
-	if ((r = spawn(argv[0], argv)) < 0)
-		writef("spawn %s: %d\n", argv[0], r);
 	
-	int temp;
-	temp = r;
+	if( strcmp(argv[0], "declare") == 0 || 
+		strcmp(argv[0], "unset") == 0 ){
+		r = -1;
+		run_incmd(argc, argv, env_id);
+	}
+	else if ((r = spawn(argv[0], argv)) < 0){
+		writef("spawn %s: %d\n", argv[0], r);
+	}
+	
 //	if((r = syscall_set_env_status(r, ENV_RUNNABLE)) < 0){
 //		writef("set child status wrong");
 //	}
-	r = temp;
+
+
 	close_all();
 	if (r >= 0) {
 		if(!run_back){
@@ -359,6 +364,7 @@ void
 umain(int argc, char **argv)
 {
 	int r, interactive, echocmds;
+	u_int env_id = syscall_getenvid();
 	interactive = '?';
 	echocmds = 0;
 	writef("\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n");
@@ -402,7 +408,7 @@ umain(int argc, char **argv)
 		if ((r = fork()) < 0)
 			user_panic("fork: %e", r);
 		if (r == 0) {
-			runcmd(buf);
+			runcmd(buf, env_id);
 			exit();
 			return;
 		} else
@@ -410,3 +416,78 @@ umain(int argc, char **argv)
 	}
 }
 
+
+void run_incmd(int argc, char ** argv, u_int env_id){
+	if(strcmp(argv[0], "declare") == 0 ){
+		declare(argc, argv, env_id);
+	}else if(strcmp(argv[0], "unset") == 0 ){
+		unset(argc, argv, env_id );
+	}
+}
+
+void declare(int argc, char ** argv, u_int env_id){
+	u_int option = 0;
+//	writef("\n in declare: argc-%d, argv- ", argc);
+	int i;
+	for(i=0;i<argc;i++){
+		writef("%s ", argv[i]);
+	}
+	ARGBEGIN
+	{
+		default:
+			fwritef(1,  "\nusage: declare [-xr] [NAME[=VALUE]]\n");
+			return;
+		case 'r':
+			option |= ENVVAR_RDONLY;
+			break;
+		case 'x':
+			option |=ENVVAR_GLOB;
+			break;
+	}
+	ARGEND	
+	char name[32], value[128];
+	char *p; 
+	int r;
+	if(argc > 1){
+		fwritef(1, "\ntoo many argvs\n");
+		return;
+	}
+	if(argc == 1){
+		if((p = strchr(argv[0], '=')) > 0){
+			option |= ENVVAR_SET;
+			strcpy(name, argv[0]);
+			name[p-argv[0]] = 0;
+			p++;
+			strcpy(value, p);
+		}else{
+			option |= ENVVAR_CREATE;
+			strcpy(name, argv[0]);
+		}
+		syscall_env_var(name, value, env_id, option);
+	}else{
+		option |= ENVVAR_LIST;
+		syscall_env_var( 0, 0, env_id, option);
+	}
+}
+
+void unset(int argc, char **argv, u_int env_id){
+	u_int option = 0;
+	if(argc > 2){
+		fwritef(1, "\ntoo many argvs\n");
+		return;
+	}
+	else if(argc < 2){
+		fwritef(1, "\ntoo few argvs\n");
+		return;
+	}
+	else{
+		option |= ENVVAR_UNSET;
+		syscall_env_var(argv[1], 0, env_id, option);
+	}
+}
+
+void getvar(char *name, u_int env_id, char* value){
+	u_int option = 0;
+	option |= ENVVAR_GET;
+	syscall_env_var(name, value, env_id, option);
+}

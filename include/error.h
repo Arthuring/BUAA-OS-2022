@@ -21,7 +21,9 @@
 #define E_FILE_EXISTS	11	// File already exists
 #define E_NOT_EXEC	12	// File not a valid executable
 #define E_DIR_NOT_EXIST 13
+#define E_VAR_NOT_FOUND 14
+#define E_VAR_READONLY 15
 
-#define MAXERROR 12
+#define MAXERROR 15
 
 #endif // _ERROR_H_

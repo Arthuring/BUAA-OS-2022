@@ -4,7 +4,10 @@
 #include <printf.h>
 #include <pmap.h>
 #include <sched.h>
+#include <error.h>
 
+
+#define NHASH (1<<8)
 extern char *KERNEL_SP;
 extern struct Env *curenv;
 
@@ -18,6 +21,147 @@ void sys_putchar(int sysno, int c, int a2, int a3, int a4, int a5)
 {
 	printcharc((char) c);
 	return ;
+}
+
+u_int hash(char* str){
+	u_int h = 0;
+	char * s;
+	for(s = str; *s!='\0'; s++){
+		h = 31 * h + *s;
+		h =  h % NHASH;
+	}
+	return h % NHASH;
+}
+
+int strcmp(const char *p, const char *q ){
+	while (*p && *q && *p == *q){
+		p++;
+		q++;
+	}
+	if((u_int)*p < (u_int)*q ){
+		return -1;
+	}
+	if((u_int)*p > (u_int)*q ){
+		return 1;
+	}
+	return 0;
+}
+
+char *strcpy(char *dst, const char *src){
+	char *ret;
+	ret = dst;
+	while((*src) != '\0'){
+		*dst = *src;
+		dst++;
+		src++;
+	}
+	return ret;
+}
+
+#define GET (1 << 6)
+#define LIST (1 << 5)
+#define UNSET (1 << 4)
+#define CREATE (1 << 3)//if set, return value, else set name
+#define SET (1 << 2) // recover value, or glob readonly 
+#define GLOB (1 << 1)
+#define RDONLY (1 << 0)
+//char name_list[NHASH][32];
+int sys_env_var(int sysno, char* name, char* value, u_int env_id, u_int option){
+	static int cnt = 0;
+	static char name_list[NHASH][32] = {0};
+	static u_int envid_list[NHASH] = {0};
+	static char value_list[NHASH][128];
+	static int readonly[NHASH] = {0} ;
+	static int glob[NHASH] = {0};
+	int i;
+//	printf("\n in sys_env_var:");
+//	if(name){
+//		printf("%s", name);
+//	}
+//	if(value){
+//		printf("%s,", value);
+//	}
+//	printf("envid:%x",env_id);
+//	printf("option: %b", option);
+	if(option & LIST){
+		printf("\n-------------------ENV_VAR-------------------");
+		for(i=0; i < NHASH ; i++){
+			if(name_list[i][0] != 0){
+//				printf(" name: %s glob: %d, env_id %d, envid_list: %d", name_list[i], glob[i], env_id, envid_list[i]);
+				if(glob[i] == 1 || envid_list[i] == env_id ){
+					printf("\n%s=%s", name_list[i], value_list[i]);
+				}
+			}
+		}
+		printf("\n------------------------------------------");
+		return 0;
+	}
+	u_int index = hash(name);
+//	printf("hash: %d ", index);
+
+	while(name_list[index][0]){
+		if(strcmp(name_list[index], name) == 0 && (env_id == envid_list[index] || glob[index] == 1 )){
+			if ((option & CREATE))	{
+				printf("Already declaired: %s=%s", name_list[index],value_list[index]);
+				return -16;
+			}
+			break;		
+		}else{
+			index++;
+			if(index == NHASH ) index =0;	
+		}
+	}
+	
+	if((option & SET)){
+//		printf("\n in set");
+		strcpy(name_list[index], name);
+//		printf("name_list[%d]: %s", index, name_list[index]);
+		if(!readonly[index]){
+			strcpy(value_list[index], value);
+		}else{
+			printf("\nfailed,\"%s\" is readonly\n", name);
+		}
+		if((option & GLOB) && glob[index] == 0 ){
+			glob[index] = 1;
+			envid_list[index] = 0;
+		}else if(glob[index] == 0 ) {
+			envid_list[index] = env_id;
+		}
+		readonly[index] |= (option & RDONLY);
+	}else if(option & CREATE){
+//		printf("\nin create");
+		strcpy(name_list[index], name);
+		value_list[index][0] = 0;
+		if((option & GLOB) && glob[index] == 0 ){
+			glob[index] = 1;
+			envid_list[index] = 0;
+		}else if(glob[index] == 0 ) {
+			envid_list[index] = env_id;
+//			printf("\nset env id %d ", env_id);
+		}
+		readonly[index] |= (option & RDONLY);
+	}else if(option == GET){
+		if(strcmp(name_list[index], name) != 0){
+			printf("\nfailed, \"%s\" is not found", name);
+			return -E_VAR_NOT_FOUND;
+		}
+		strcpy(value, value_list[index]);
+	}else if(option & UNSET){
+		if(strcmp(name_list[index], name) != 0){
+			printf("\nfailed, \"%s\" is not found", name);
+			return -E_VAR_NOT_FOUND;
+		}
+		if(readonly[index] == 1){
+			printf("\nfailed, \"%s\" is readonly", name);
+			return -E_VAR_READONLY;
+		}
+		name_list[index][0] = 0;
+		value_list[index][0] = 0;
+		glob[index] = 0;
+		readonly[index] = 0;
+		envid_list[index] = 0;
+	}
+	return 0;
 }
 
 /* Overview:

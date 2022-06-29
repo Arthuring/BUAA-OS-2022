@@ -95,3 +95,8 @@ int syscall_write_dev(u_int va, u_int dev, u_int len){
 int syscall_read_dev(u_int va, u_int dev, u_int len){
 	return msyscall(SYS_read_dev, va, dev, len, 0, 0);
 }
+
+int syscall_env_var(char *name, char *value, u_int env_id, u_int option){
+	return msyscall(SYS_env_var, name, value, env_id, option, 0);
+}
+

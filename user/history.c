@@ -2,12 +2,14 @@
 
 void umain(int argc, char**argv){
 	int fd = open("/.history",O_RDONLY);
-	char buf[1024];
+	char buf[128];
 	int r;
 	if(fd  < 0){
 		writef("\n./history not found\n");
 	}
-	while((r = readn(fd, buf, 1024)) != 0 ){
-		writef("%s", buf);
+	int cnt = 1;
+	while((r = read_line(fd, buf, 128)) != 0 ){
+		writef("%d\t%s\n",cnt, buf);
+		cnt++;
 	}
 }

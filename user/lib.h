@@ -67,6 +67,7 @@ void syscall_ipc_recv(u_int dstva);
 int syscall_cgetc();
 int syscall_write_dev(u_int va, u_int dev, u_int len);
 int syscall_read_dev(u_int va, u_int dev, u_int len);
+int syscall_env_var(char* name, char* value, u_int env_id, u_int option);
 
 // string.c
 int strlen(const char *s);
@@ -132,8 +133,11 @@ int user_create(char* path, int isdir);
 //history.c
 void write_history(char *buf, int n);
 int read_history_cached(char buf[128][128]);
-
-
+//sh.c
+void declare(int argc, char** argv, u_int env_id);
+void unset(int argc, char** argv, u_int env_id );
+void run_incmd(int argc, char** argv, u_int env_id );
+void getvar(char *name, u_int env_id, char *value);
 #define user_assert(x)	\
 	do {	if (!(x)) user_panic("assertion failed: %s", #x); } while (0)
 
@@ -149,5 +153,13 @@ int read_history_cached(char buf[128][128]);
 #define	O_EXCL		0x0400		/* error if already exists */
 #define O_MKDIR		0x0800		/* create directory, not regular file */
 
+/*ENV VAR OP*/
+#define ENVVAR_GET (1 << 6)
+#define ENVVAR_LIST (1 << 5)
+#define ENVVAR_UNSET (1 << 4)
+#define ENVVAR_CREATE (1 << 3)//if set, return value, else set name
+#define ENVVAR_SET (1 << 2) // recover value, or glob readonly 
+#define ENVVAR_GLOB (1 << 1)
+#define ENVVAR_RDONLY (1 << 0)
 
 #endif
