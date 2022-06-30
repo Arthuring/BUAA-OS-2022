@@ -81,7 +81,7 @@ ide_write(u_int diskno, u_int secno, void *src, u_int nsecs)
 	 int offset = 0 ;
 
 	// DO NOT DELETE WRITEF !!!
-	writef("diskno: %d\n", diskno);
+//	writef("diskno: %d\n", diskno);
 	
 	int temp;
 

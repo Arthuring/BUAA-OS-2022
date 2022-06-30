@@ -1,4 +1,6 @@
 #include "lib.h"
+#include "color.h"
+
 int tree(char *path, int deep, int *isEnd);
 void print_bar(int deep, int *isEnd);
 
@@ -21,15 +23,15 @@ int tree(char *path,int deep, int *isEnd){
 	int nowEnd = 0;
 	char next_path[MAXPATHLEN];
 	if((fd = open(path, O_RDONLY)) < 0 ){
-		writef("faied in open dirctory \"%s\"\n", path);
+		writef(RED(faied in open dirctory)"\"%s\"\n", path);
 		return;
 	}
 	if(deep == 0){
 		if(path[0] == '/'){
 			writef("%s\n", path + 1);
-			if(path[1] == 0) writef(".\n");
+			if(path[1] == 0) writef(LIGHT_BLUE(.\n));
 		}else{
-			writef("%s\n", path);
+			writef(LIGHT_BLUE(%s\n), path);
 		}
 	}
 
@@ -45,7 +47,8 @@ int tree(char *path,int deep, int *isEnd){
 			print_bar(deep, isEnd);
 			if(nowEnd) writef("`-- ");
 			else writef("|-- ");
-			writef("%s\n", f.f_name);
+			if(f.f_type == FTYPE_DIR) writef(LIGHT_BLUE(%s\n), f.f_name);
+			else  writef("%s\n", f.f_name);
 		}
 		if(f.f_type == FTYPE_DIR){
 			isEnd[deep] = nowEnd;

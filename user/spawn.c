@@ -2,6 +2,7 @@
 #include <mmu.h>
 #include <env.h>
 #include <kerelf.h>
+#include "color.h"
 
 #define debug 0
 #define TMPPAGE		(BY2PG)
@@ -239,6 +240,8 @@ int spawn(char *prog, char **argv)
 	}
 	if((r=open(prog_path, O_RDONLY))<0){
 		//user_panic("spawn ::open line 102 RDONLY wrong !\n");
+		if(r == -9)
+		writef(RED(not found program %s), prog_path);
 		return r;
 	}
 	// Your code begins here
@@ -296,7 +299,7 @@ int spawn(char *prog, char **argv)
 	close(fd);	
 	// Your code ends here
 	struct Trapframe *tf;
-	writef("\n::::::::::spawn size : %x  sp : %x::::::::\n",size,esp);
+	//writef("\n::::::::::spawn size : %x  sp : %x::::::::\n",size,esp);
 	tf = &(envs[ENVX(child_envid)].env_tf);
 	tf->pc = UTEXT;
 	tf->regs[29]=esp;

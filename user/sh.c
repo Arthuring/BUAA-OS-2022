@@ -1,5 +1,6 @@
 #include "lib.h"
 #include <args.h>
+#include "color.h"
 
 int debug_ = 0;
 
@@ -238,20 +239,13 @@ runit:
 		return;
 	}
 	argv[argc] = 0;
-	if (1) {
-		writef("[%08x] SPAWN:", env->env_id);
-		for (i=0; argv[i]; i++)
-			writef(" %s", argv[i]);
-		writef("\n");
-	}
-
 	if( strcmp(argv[0], "declare") == 0 || 
 		strcmp(argv[0], "unset") == 0 ){
 		r = -1;
 		run_incmd(argc, argv, env_id);
 	}
 	else if ((r = spawn(argv[0], argv)) < 0){
-		writef("spawn %s: %d\n", argv[0], r);
+	//	writef("spawn %s: %d\n", argv[0], r);
 	}
 	
 //	if((r = syscall_set_env_status(r, ENV_RUNNABLE)) < 0){
@@ -267,9 +261,9 @@ runit:
 		}else{
 			back_id = fork();
 			if(back_id == 0){
-				writef("\n[%08x] running\t", r);
+				writef(LIGHT_GREEN(\n[%08x] running\t), r);
 				for(i=0; i<argc; i++){
-					writef("%s ", argv[i]);
+					writef(LIGHT_GREEN(%s)" ", argv[i]);
 				}
 				wait(r);
 				writef("\n[%08x] done\t", r);
@@ -367,7 +361,7 @@ readline(char *buf, u_int n)
 			return;
 		}
 	}
-	writef("line too long\n");
+	writef(RED(line too long\n));
 	while((r = read(0, buf, 1)) == 1 && buf[0] != '\n');
 	buf[0] = 0;
 }	
@@ -377,7 +371,7 @@ char buf[1024];
 void
 usage(void)
 {
-	writef("usage: sh [-dix] [command-file]\n");
+	writef(RED(usage: sh [-dix] [command-file]\n));
 	exit();
 }
 
@@ -388,11 +382,11 @@ umain(int argc, char **argv)
 	u_int env_id = syscall_getenvid();
 	interactive = '?';
 	echocmds = 0;
-	writef("\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n");
-	writef("::                                                         ::\n");
-	writef("::              Super Shell  V0.0.0_1                      ::\n");
-	writef("::                                                         ::\n");
-	writef(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n");
+	writef("\n"BLUE(::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::)"\n");
+	writef(BLUE(::)"								"BLUE(::\n));
+	writef(BLUE(::)"			"LIGHT_BLUE(GYSuper Shell  V0.0.0_1)"			"BLUE(::\n));
+	writef(BLUE(::)"								"BLUE(::\n));
+	writef(BLUE(::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n));
 	ARGBEGIN{
 	case 'd':
 		debug_++;
@@ -419,11 +413,12 @@ umain(int argc, char **argv)
 		interactive = iscons(0);
 	for(;;){
 		if (interactive)
-			fwritef(1, "\n$ ");
+			fwritef(1, LIGHT_MEG(\n$));
 		readline(buf, sizeof buf);
 		write_history(buf, strlen(buf));
 		if(buf[0] == 'e' && buf[1] == 'x' && buf[2] == 'i' && buf[3] == 't'){
 			clear_envvar(env_id, ENVVAR_CLEAR);
+			writef(LIGHT_BLUE(::::::::::::::::::::GYSuper shell EXIT::::::::::::::::::::::::::::));
 			exit();
 		}
 		replace_envvar(buf, env_id);
@@ -494,13 +489,13 @@ void declare(int argc, char ** argv, u_int env_id){
 	u_int option = 0;
 //	writef("\n in declare: argc-%d, argv- ", argc);
 	int i;
-	for(i=0;i<argc;i++){
-		writef("%s ", argv[i]);
-	}
+//	for(i=0;i<argc;i++){
+//		writef("%s ", argv[i]);
+//	}
 	ARGBEGIN
 	{
 		default:
-			fwritef(1,  "\nusage: declare [-xr] [NAME[=VALUE]]\n");
+			fwritef(1,  RED(\nusage: declare [-xr] [NAME[=VALUE]]\n));
 			return;
 		case 'r':
 			option |= ENVVAR_RDONLY;
@@ -514,7 +509,7 @@ void declare(int argc, char ** argv, u_int env_id){
 	char *p; 
 	int r;
 	if(argc > 1){
-		fwritef(1, "\ntoo many argvs\n");
+		fwritef(1, RED(\ntoo many argvs\n));
 		return;
 	}
 	if(argc == 1){
@@ -538,11 +533,11 @@ void declare(int argc, char ** argv, u_int env_id){
 void unset(int argc, char **argv, u_int env_id){
 	u_int option = 0;
 	if(argc > 2){
-		fwritef(1, "\ntoo many argvs\n");
+		fwritef(1, RED(\ntoo many argvs\n));
 		return;
 	}
 	else if(argc < 2){
-		fwritef(1, "\ntoo few argvs\n");
+		fwritef(1, RED(\ntoo few argvs\n));
 		return;
 	}
 	else{

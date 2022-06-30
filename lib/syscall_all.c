@@ -5,7 +5,7 @@
 #include <pmap.h>
 #include <sched.h>
 #include <error.h>
-
+#include <color.h>
 
 #define NHASH (1<<8)
 extern char *KERNEL_SP;
@@ -98,16 +98,16 @@ int sys_env_var(int sysno, char* name, char* value, u_int env_id, u_int option){
 	}
 
 	if(option & LIST){
-		printf("\n-------------------ENV_VAR-------------------");
+		printf(LIGHT_GREEN(-------------------ENV_VAR-------------------\n));
 		for(i=0; i < NHASH ; i++){
 			if(name_list[i][0] != 0){
 //				printf(" name: %s glob: %d, env_id %d, envid_list: %d", name_list[i], glob[i], env_id, envid_list[i]);
 				if(glob[i] == 1 || envid_list[i] == env_id ){
-					printf("\n%s=%s", name_list[i], value_list[i]);
+					printf("%s=%s\n", name_list[i], value_list[i]);
 				}
 			}
 		}
-		printf("\n------------------------------------------");
+		printf(LIGHT_GREEN(--------------------------------------------\n));
 		return 0;
 	}
 	u_int index = hash(name);
@@ -156,7 +156,8 @@ int sys_env_var(int sysno, char* name, char* value, u_int env_id, u_int option){
 		readonly[index] |= (option & RDONLY);
 	}else if(option == GET){
 		if(strcmp(name_list[index], name) != 0){
-			printf("\nfailed, \"%s\" is not found", name);
+			//printf("\nfailed, \"%s\" is not found", name);
+			value[0] = 0;
 			return -E_VAR_NOT_FOUND;
 		}
 		strcpy(value, value_list[index]);
