@@ -103,7 +103,7 @@ int sys_env_var(int sysno, char* name, char* value, u_int env_id, u_int option){
 			if(name_list[i][0] != 0){
 //				printf(" name: %s glob: %d, env_id %d, envid_list: %d", name_list[i], glob[i], env_id, envid_list[i]);
 				if(glob[i] == 1 || envid_list[i] == env_id ){
-					printf("%s=%s\n", name_list[i], value_list[i]);
+					printf("%s=%s\n", name_list[i], value_list[i], glob[i], envid_list[i]);
 				}
 			}
 		}
@@ -142,14 +142,16 @@ int sys_env_var(int sysno, char* name, char* value, u_int env_id, u_int option){
 		readonly[index] |= (option & RDONLY);
 	}else if(option & CREATE){
 		strcpy(name_list[index], name);
-		value_list[index][0] = 0;
+		readonly[index] |= (option & RDONLY);
+		if(!readonly[index]){
+			//value_list[index][0] = 0;
+		}
 		if((option & GLOB) && glob[index] == 0 ){
 			glob[index] = 1;
 			envid_list[index] = 0;
 		}else if(glob[index] == 0 ) {
 			envid_list[index] = env_id;
 		}
-		readonly[index] |= (option & RDONLY);
 	}else if(option == GET){
 		if(strcmp(name_list[index], name) != 0){
 			value[0] = 0;

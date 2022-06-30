@@ -422,18 +422,29 @@ umain(int argc, char **argv)
 			exit();
 		}
 		replace_envvar(buf, env_id);
+		char argv0 [128];
+		strcpy(argv0, buf);
+		int m=-1;
+		while(argv0[++m] != ' ' && argv[m] != '\0');
+		argv0[m] = 0;
+
 		if (buf[0] == '#')
 			continue;
 		if (echocmds)
 			fwritef(1, "# %s\n", buf);
-		if ((r = fork()) < 0)
-			user_panic("fork: %e", r);
-		if (r == 0) {
+		if(strcmp(argv0, "declare") == 0 ||
+			strcmp(argv0, "unset") == 0){
 			runcmd(buf, env_id);
-			exit();
-			return;
-		} else
-			wait(r);
+		}else{
+			if ((r = fork()) < 0)
+				user_panic("fork: %e", r);
+			if (r == 0) {
+				runcmd(buf, env_id);
+				exit();
+				return;
+			} else
+				wait(r);
+		}
 	}
 }
 
@@ -508,11 +519,11 @@ void declare(int argc, char ** argv, u_int env_id){
 	char name[32], value[128];
 	char *p; 
 	int r;
-	if(argc > 1){
-		fwritef(1, RED(\ntoo many argvs\n));
-		return;
-	}
-	if(argc == 1){
+	//if(argc > 1){
+	//	fwritef(1, RED(\ntoo many argvs\n));
+	//	return;
+	//}
+	if(argc >= 1){
 		if((p = strchr(argv[0], '=')) > 0){
 			option |= ENVVAR_SET;
 			strcpy(name, argv[0]);
