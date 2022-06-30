@@ -5,7 +5,7 @@
 #include <pmap.h>
 #include <sched.h>
 #include <error.h>
-#include <color.h>
+#include <print.h>
 
 #define NHASH (1<<8)
 extern char *KERNEL_SP;
@@ -115,8 +115,8 @@ int sys_env_var(int sysno, char* name, char* value, u_int env_id, u_int option){
 
 	while(name_list[index][0]){
 		if(strcmp(name_list[index], name) == 0 && (env_id == envid_list[index] || glob[index] == 1 )){
-			if ((option & CREATE))	{
-				printf("Already declaired: %s=%s", name_list[index],value_list[index]);
+			if ((option & CREATE) && (!(option & GLOB)) && (!(option & RDONLY)))	{
+				printf("%s=%s", name_list[index],value_list[index]);
 				return -16;
 			}
 			break;		
@@ -127,13 +127,11 @@ int sys_env_var(int sysno, char* name, char* value, u_int env_id, u_int option){
 	}
 	
 	if((option & SET)){
-//		printf("\n in set");
 		strcpy(name_list[index], name);
-//		printf("name_list[%d]: %s", index, name_list[index]);
 		if(!readonly[index]){
 			strcpy(value_list[index], value);
 		}else{
-			printf("\nfailed,\"%s\" is readonly\n", name);
+			printf("\033[0m\033[1;31m\nfailed,\"%s\" is readonly\n\033[0m", name);
 		}
 		if((option & GLOB) && glob[index] == 0 ){
 			glob[index] = 1;
@@ -143,7 +141,6 @@ int sys_env_var(int sysno, char* name, char* value, u_int env_id, u_int option){
 		}
 		readonly[index] |= (option & RDONLY);
 	}else if(option & CREATE){
-//		printf("\nin create");
 		strcpy(name_list[index], name);
 		value_list[index][0] = 0;
 		if((option & GLOB) && glob[index] == 0 ){
@@ -151,23 +148,21 @@ int sys_env_var(int sysno, char* name, char* value, u_int env_id, u_int option){
 			envid_list[index] = 0;
 		}else if(glob[index] == 0 ) {
 			envid_list[index] = env_id;
-//			printf("\nset env id %d ", env_id);
 		}
 		readonly[index] |= (option & RDONLY);
 	}else if(option == GET){
 		if(strcmp(name_list[index], name) != 0){
-			//printf("\nfailed, \"%s\" is not found", name);
 			value[0] = 0;
 			return -E_VAR_NOT_FOUND;
 		}
 		strcpy(value, value_list[index]);
 	}else if(option & UNSET){
 		if(strcmp(name_list[index], name) != 0){
-			printf("\nfailed, \"%s\" is not found", name);
+			printf("\033[0m\033[1;31m\nfailed,\"%s\" is not found\n\033[0m", name);
 			return -E_VAR_NOT_FOUND;
 		}
 		if(readonly[index] == 1){
-			printf("\nfailed, \"%s\" is readonly", name);
+			printf("\033[0m\033[1;31m\nfailed,\"%s\" is readonly\n\033[0m", name);
 			return -E_VAR_READONLY;
 		}
 		name_list[index][0] = 0;

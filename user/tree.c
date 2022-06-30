@@ -13,6 +13,16 @@ void umain(int argc, char **argv){
 	}else{
 		strcpy(path, argv[1]);
 	}
+	int fd = open(path, O_RDONLY);
+	if(fd < 0){
+		writef("\033[0m\033[1;31mfaied in open dirctory \"%s\"\n\033[0m", path);
+		return;
+	}
+	struct Filefd* ffd = (struct Filefd *)num2fd(fd);
+	if(ffd->f_file.f_type != FTYPE_DIR){
+		writef("\033[0m\033[1;31mnot a dirctory \"%s\"\n\033[0m", path);
+		return;	
+	}
 	tree(path, 0, isEnd);	
 }
 
@@ -24,7 +34,7 @@ int tree(char *path,int deep, int *isEnd){
 	char next_path[MAXPATHLEN];
 	if((fd = open(path, O_RDONLY)) < 0 ){
 		writef(RED(faied in open dirctory)"\"%s\"\n", path);
-		return;
+		return fd;
 	}
 	if(deep == 0){
 		if(path[0] == '/'){

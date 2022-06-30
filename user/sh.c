@@ -266,7 +266,7 @@ runit:
 					writef(LIGHT_GREEN(%s)" ", argv[i]);
 				}
 				wait(r);
-				writef("\n[%08x] done\t", r);
+				writef(LIGHT_GREEN(\n[%08x] done\t), r);
 				for(i = 0; i<argc;i++){
 					writef("%s ", argv[i]);
 				}
