@@ -20,7 +20,7 @@ static void user_myoutput(void *arg, const char *s, int l)
 		syscall_putchar(s[i]);
 
 		if (s[i] == '\n') {
-			syscall_putchar('\n');
+		//	syscall_putchar('\n');
 		}
 	}
 }

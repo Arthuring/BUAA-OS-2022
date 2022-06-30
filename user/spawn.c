@@ -223,7 +223,7 @@ int spawn(char *prog, char **argv)
 	int size, text_start;
 	int entry_size;
 	int count;
-
+	char prog_path[128];
 	u_int i, *blk;
 	u_int esp;
 	Elf32_Ehdr* elf;
@@ -232,7 +232,12 @@ int spawn(char *prog, char **argv)
 	Elf32_Phdr* phdr;
 	// Note 0: some variable may be not used,you can cancel them as you like
 	// Step 1: Open the file specified by `prog` (prog is the path of the program)
-	if((r=open(prog, O_RDONLY))<0){
+	strcpy(prog_path, prog);	
+	int len = strlen(prog_path);
+	if(prog_path[len-2] != '.' || prog_path[len-1] != 'b'){
+		strcpy(prog_path+strlen(prog_path), ".b");
+	}
+	if((r=open(prog_path, O_RDONLY))<0){
 		//user_panic("spawn ::open line 102 RDONLY wrong !\n");
 		return r;
 	}

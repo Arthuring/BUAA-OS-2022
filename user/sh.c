@@ -244,7 +244,7 @@ runit:
 			writef(" %s", argv[i]);
 		writef("\n");
 	}
-	
+
 	if( strcmp(argv[0], "declare") == 0 || 
 		strcmp(argv[0], "unset") == 0 ){
 		r = -1;
@@ -291,6 +291,13 @@ runit:
 	}
 
 	exit();
+}
+
+void clear_con(char* buf){
+	int i;
+	for(i = 0; i < strlen(buf); i++){
+		writef("\b \b");
+	}
 }
 
 void
@@ -343,11 +350,17 @@ readline(char *buf, u_int n)
 			}
 		}
 		
-		if(buf[i] == '\b'){
-			if(i > 0)
+		if(buf[i] == '\b' || buf[i] == 127){
+			if(i > 0){
+				buf[i] = 0;
+				clear_con(buf);
+				buf[i-1]=0;
+				writef("%s", buf);
 				i -= 2;
-			else
-				i = 0;
+			}else{
+				buf[i] = 0;
+				i = -1;
+			}
 		}
 		if(buf[i] == '\r' || buf[i] == '\n'){
 			buf[i] = 0;
