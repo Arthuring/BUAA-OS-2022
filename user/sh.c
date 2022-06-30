@@ -382,11 +382,11 @@ umain(int argc, char **argv)
 	u_int env_id = syscall_getenvid();
 	interactive = '?';
 	echocmds = 0;
-	writef("\n"BLUE(::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::)"\n");
-	writef(BLUE(::)"								"BLUE(::\n));
-	writef(BLUE(::)"			"LIGHT_BLUE(GYSuper Shell  V0.0.0_1)"			"BLUE(::\n));
-	writef(BLUE(::)"								"BLUE(::\n));
-	writef(BLUE(::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n));
+	writef("\n"LIGHT_BLUE(::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::)"\n");
+	writef(LIGHT_BLUE(::)"								"LIGHT_BLUE(::\n));
+	writef(LIGHT_BLUE(::)"			"LIGHT_BLUE(GYSuper Shell  V0.0.0_1)"			"LIGHT_BLUE(::\n));
+	writef(LIGHT_BLUE(::)"								"LIGHT_BLUE(::\n));
+	writef(LIGHT_BLUE(::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n));
 	ARGBEGIN{
 	case 'd':
 		debug_++;
@@ -413,7 +413,7 @@ umain(int argc, char **argv)
 		interactive = iscons(0);
 	for(;;){
 		if (interactive)
-			fwritef(1, LIGHT_MEG(\n$));
+			fwritef(1, LIGHT_MEG(\n$)" ");
 		readline(buf, sizeof buf);
 		write_history(buf, strlen(buf));
 		if(buf[0] == 'e' && buf[1] == 'x' && buf[2] == 'i' && buf[3] == 't'){
