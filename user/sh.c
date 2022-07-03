@@ -71,7 +71,8 @@ int
 _gettoken(char *s, char **p1, char **p2)
 {
 	int t;
-
+	int ignore1 = 0;
+	int ignore2 = 0;
 	if (s == 0) {
 		//if (debug_ > 1) writef("GETTOKEN NULL\n");
 		return 0;
@@ -89,23 +90,31 @@ _gettoken(char *s, char **p1, char **p2)
 	//	if (debug_ > 1) writef("EOL\n");
 		return 0;
 	}
-	if(*s == '\"'){
+	if(*s == '\''){
+		ignore1 = 1-ignore1;
+		strcpy(s, s+1);
+		/*
 		s++;
 		*p1 = s;
 		while( *s && *s != '\"' && *(s-1) != '\\'  ) s++;
 		*p2 = s;
 		*s = ' ';
 		return 'w';
+		*/
 	}
-	if(*s == '\''){
+	if(*s == '\"'){
+		ignore2 = 1-ignore2;
+		strcpy(s, s+1);
+		/*
 		s++;
 		*p1 = s;
 		while( *s && *s != '\'' && *(s-1) != '\\'  ) s++;
 		*p2 = s;
 		*s = ' ';
 		return 'w';
+		*/
 	}
-	if(strchr(SYMBOLS, *s)){
+	if(strchr(SYMBOLS, *s) && ignore1== 0 && ignore2 == 0){
 		t = *s;
 		*p1 = s;
 		*s++ = 0;
@@ -114,8 +123,18 @@ _gettoken(char *s, char **p1, char **p2)
 		return t;
 	}
 	*p1 = s;
-	while(*s && !strchr(WHITESPACE SYMBOLS, *s))
-		s++;
+	while(*s && (!strchr(WHITESPACE SYMBOLS, *s) || !(ignore1 == 0 && ignore2 == 0) )) {
+		if(*s == '\''){
+			ignore1 = 1-ignore1;
+			strcpy(s, s+1);
+		}
+		else if(*s == '\"'){
+			ignore2 = 1-ignore2;
+			strcpy(s, s+1);
+		}else{
+			s++;
+		}
+	}
 	*p2 = s;
 	if (debug_ > 1) {
 		t = **p2;
@@ -194,7 +213,8 @@ again:
 			}
 			r = open(t, O_WRONLY);
 			if(r < 0){
-				user_panic("> open file failed!");
+				writef("\033[0m\033[1;31m> open file failed!\033[0m");
+				exit();
 			}
 			fd = r;
 			dup(fd, 1);

@@ -58,7 +58,9 @@ int tree(char *path,int deep, int *isEnd){
 			if(nowEnd) writef("`-- ");
 			else writef("|-- ");
 			if(f.f_type == FTYPE_DIR) writef(LIGHT_BLUE(%s\n), f.f_name);
-			else  writef("%s\n", f.f_name);
+			else  if(f.f_name[strlen(f.f_name)-2] == '.'
+				   &&f.f_name[strlen(f.f_name)-1] == 'b') writef("\033[0m\033[1;32m%s\n\033[0m", f.f_name);
+			else writef("%s\n", f.f_name);
 		}
 		if(f.f_type == FTYPE_DIR){
 			isEnd[deep] = nowEnd;
