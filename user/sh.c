@@ -273,6 +273,7 @@ runit:
 //	}
 
 
+	if(strcmp(argv[0], "declare") != 0 && strcmp(argv[0], "unset") != 0 )
 	close_all();
 	if (r >= 0) {
 		if(!run_back){
@@ -304,7 +305,8 @@ runit:
 		wait(isright);
 	}
 
-	exit();
+	if(strcmp(argv[0], "declare") != 0 && strcmp(argv[0], "unset") != 0 )
+		exit();
 }
 
 void clear_con(char* buf){
@@ -445,15 +447,16 @@ umain(int argc, char **argv)
 		char argv0 [128];
 		strcpy(argv0, buf);
 		int m=-1;
-		while(argv0[++m] != ' ' && argv[m] != '\0');
+		while(argv0[++m] != ' ' && argv0[m] != '\0');
 		argv0[m] = 0;
-
+		//writef("argv0:%s\n", argv0);
 		if (buf[0] == '#')
 			continue;
 		if (echocmds)
 			fwritef(1, "# %s\n", buf);
 		if(strcmp(argv0, "declare") == 0 ||
 			strcmp(argv0, "unset") == 0){
+			//writef("no fork \n");
 			runcmd(buf, env_id);
 		}else{
 			if ((r = fork()) < 0)
